@@ -66,18 +66,16 @@ const AddAlbumDialog = () => {
 			formData.append("releaseYear", newAlbum.releaseYear.toString());
 			formData.append("imageFile", imageFile);
 
-			await axiosInstance.post("/admin/albums", formData, {
-				headers: {
-					"Content-Type": "multipart/form-data",
-				},
-			});
+			await axiosInstance.post("/admin/albums", formData);
 
 			handleReset();
 			setAlbumDialogOpen(false);
 			toast.success("Album created successfully");
 			fetchAlbums();
 		} catch (error: any) {
-			toast.error("Failed to create album: " + error.message);
+			const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+			console.error("Album creation error:", error);
+			toast.error("Failed to create album: " + errorMessage);
 		} finally {
 			setIsLoading(false);
 		}

@@ -51,6 +51,10 @@ const AddSongDialog = () => {
 				return toast.error("Please upload both audio and image files");
 			}
 
+			if (!newSong.title.trim() || !newSong.artist.trim()) {
+				return toast.error("Title and artist are required");
+			}
+
 			const formData = new FormData();
 
 			formData.append("title", newSong.title);
@@ -63,11 +67,7 @@ const AddSongDialog = () => {
 			formData.append("audioFile", files.audio);
 			formData.append("imageFile", files.image);
 
-			await axiosInstance.post("/admin/songs", formData, {
-				headers: {
-					"Content-Type": "multipart/form-data",
-				},
-			});
+			await axiosInstance.post("/admin/songs", formData);
 
 			setNewSong({
 				title: "",
@@ -80,9 +80,16 @@ const AddSongDialog = () => {
 				audio: null,
 				image: null,
 			});
+			setSongDialogOpen(false);
+			// Refresh songs list
+			setTimeout(() => {
+				window.location.reload();
+			}, 500);
 			toast.success("Song added successfully");
 		} catch (error: any) {
-			toast.error("Failed to add song: " + error.message);
+			const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+			console.error("Song upload error:", error);
+			toast.error("Failed to add song: " + errorMessage);
 		} finally {
 			setIsLoading(false);
 		}
