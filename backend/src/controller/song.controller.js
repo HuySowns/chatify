@@ -1,4 +1,5 @@
 import { Song } from "../models/song.model.js";
+import https from "https";
 
 export const getAllSongs = async (req, res, next) => {
 	try {
@@ -76,6 +77,47 @@ export const getTrendingSongs = async (req, res, next) => {
 		]);
 
 		res.json(songs);
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const streamSong = async (req, res, next) => {
+	try {
+		const song = await Song.findById(req.params.id);
+		if (!song) {
+			return res.status(404).json({ message: "Song not found" });
+		}
+
+		const audioUrl = song.audioUrl;
+		const url = new URL(audioUrl);
+
+		const options = {
+			hostname: url.hostname,
+			path: url.pathname + url.search,
+			method: "GET",
+		};
+
+		const request = https.request(options, (response) => {
+			if (response.statusCode !== 200) {
+				return res.status(response.statusCode).json({ message: "Failed to fetch audio" });
+			}
+
+			res.set({
+				"Content-Type": response.headers["content-type"] || "audio/mpeg",
+				"Content-Disposition": "inline",
+				"Cache-Control": "no-cache",
+				"Accept-Ranges": "bytes",
+			});
+
+			response.pipe(res);
+		});
+
+		request.on("error", (err) => {
+			next(err);
+		});
+
+		request.end();
 	} catch (error) {
 		next(error);
 	}

@@ -33,13 +33,14 @@ const AudioPlayer = () => {
 		const audio = audioRef.current;
 
 		// check if this is actually a new song
-		const isSongChange = prevSongRef.current !== currentSong?.audioUrl;
+		const streamUrl = `/api/songs/stream/${currentSong._id}`;
+		const isSongChange = prevSongRef.current !== streamUrl;
 		if (isSongChange) {
-			audio.src = currentSong?.audioUrl;
+			audio.src = streamUrl;
 			// reset the playback position
 			audio.currentTime = 0;
 
-			prevSongRef.current = currentSong?.audioUrl;
+			prevSongRef.current = streamUrl;
 
 			if (isPlaying) audio.play();
 		}
