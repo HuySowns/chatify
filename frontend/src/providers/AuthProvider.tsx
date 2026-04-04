@@ -20,6 +20,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		const initAuth = async () => {
 			try {
 				const token = await getToken();
+				console.log("Token from Clerk:", token ? "✓ Received" : "✗ No token");
 				updateApiToken(token);
 				if (token) {
 					await checkAdminStatus();
@@ -27,8 +28,8 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 					if (userId) initSocket(userId);
 				}
 			} catch (error: any) {
+				console.error("Error getting token from Clerk:", error);
 				updateApiToken(null);
-				console.log("Error in auth provider", error);
 			} finally {
 				setLoading(false);
 			}
