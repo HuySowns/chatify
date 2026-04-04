@@ -7,8 +7,14 @@ import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const updateApiToken = (token: string | null) => {
-	if (token) axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-	else delete axiosInstance.defaults.headers.common["Authorization"];
+	if (token) {
+		axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+		// Lưu token vào window để AudioPlayer dùng trong synchronous XHR (beforeunload)
+		(window as any).__chatifyAuthToken = token;
+	} else {
+		delete axiosInstance.defaults.headers.common["Authorization"];
+		(window as any).__chatifyAuthToken = null;
+	}
 };
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -18,6 +24,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const { initSocket, disconnectSocket } = useChatStore();
 	const { loadPlaybackPosition } = usePlayerStore();
 
+	// Initialize auth and load playback position
 	useEffect(() => {
 		const initAuth = async () => {
 			try {
@@ -26,7 +33,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 				updateApiToken(token);
 				if (token) {
 					await checkAdminStatus();
-					// Tải vị trí nghe đã lưu khi user login (không block nếu fail)
+					// Tải vị trí nghe đã lưu khi user login
 					try {
 						await loadPlaybackPosition();
 					} catch (playbackError) {
@@ -45,8 +52,9 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 		initAuth();
 
-		// clean up
-		return () => disconnectSocket();
+		return () => {
+			disconnectSocket();
+		};
 	}, [getToken, userId, checkAdminStatus, initSocket, disconnectSocket, loadPlaybackPosition]);
 
 	if (loading)

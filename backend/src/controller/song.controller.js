@@ -106,54 +106,57 @@ export const streamSong = async (req, res, next) => {
 
 		const audioUrl = song.audioUrl;
 		const url = new URL(audioUrl);
+		const rangeHeader = req.headers.range;
+
+		const requestHeaders = {
+			// Forward range header để Cloudinary có thể trả về đúng đoạn audio
+			...(rangeHeader && { Range: rangeHeader }),
+		};
 
 		const options = {
 			hostname: url.hostname,
 			path: url.pathname + url.search,
 			method: "GET",
+			headers: requestHeaders,
 		};
 
-		// Add range header if client sent one
-		if (req.headers.range) {
-			options.headers = {
-				Range: req.headers.range,
-			};
-		}
-
 		const request = https.request(options, (response) => {
-			// Handle range request response
+			const upstreamStatus = response.statusCode;
 			const contentLength = response.headers["content-length"];
 			const contentRange = response.headers["content-range"];
+			const contentType = response.headers["content-type"] || "audio/mpeg";
 
-			let statusCode = response.statusCode;
-			if (statusCode === 206 || statusCode === 200) {
-				// 206 Partial Content for range requests, 200 OK for full content
-				res.status(statusCode);
-			} else if (statusCode !== 200) {
-				return res.status(statusCode).json({ message: "Failed to fetch audio" });
+			// Nếu Cloudinary hỗ trợ range → trả về 206 Partial Content
+			// Nếu không → trả về 200 (toàn bộ file)
+			const responseStatus = upstreamStatus === 206 ? 206 : 200;
+
+			if (upstreamStatus !== 200 && upstreamStatus !== 206) {
+				return res.status(upstreamStatus).json({ message: "Failed to fetch audio" });
 			}
 
-			res.set({
-				"Content-Type": response.headers["content-type"] || "audio/mpeg",
+			// Headers bắt buộc để browser audio element có thể seek
+			const headers = {
+				"Content-Type": contentType,
 				"Content-Disposition": "inline",
-				"Cache-Control": "public, max-age=3600",
 				"Accept-Ranges": "bytes",
-			});
+				// Cache để tránh re-download mỗi lần seek
+				"Cache-Control": "public, max-age=3600",
+				// Cho phép frontend JS đọc headers này (CORS)
+				"Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length",
+			};
 
-			// Forward relevant headers
-			if (contentLength) {
-				res.set("Content-Length", contentLength);
-			}
-			if (contentRange) {
-				res.set("Content-Range", contentRange);
-			}
+			if (contentLength) headers["Content-Length"] = contentLength;
+			if (contentRange) headers["Content-Range"] = contentRange;
 
+			res.writeHead(responseStatus, headers);
 			response.pipe(res);
 		});
 
 		request.on("error", (err) => {
 			console.error("Stream request error:", err);
-			res.status(500).json({ message: "Failed to stream audio" });
+			if (!res.headersSent) {
+				res.status(500).json({ message: "Failed to stream audio" });
+			}
 		});
 
 		request.end();
@@ -162,3 +165,4 @@ export const streamSong = async (req, res, next) => {
 		next(error);
 	}
 };
+

@@ -31,6 +31,9 @@ app.use(
 	cors({
 		origin: "http://localhost:3000",
 		credentials: true,
+		// Cho phép Range header để audio element có thể seek (chình xác vị trí phát)
+		allowedHeaders: ["Content-Type", "Authorization", "Range"],
+		exposedHeaders: ["Content-Range", "Accept-Ranges", "Content-Length"],
 	})
 );
 

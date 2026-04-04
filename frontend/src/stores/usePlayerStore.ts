@@ -9,6 +9,7 @@ interface PlayerStore {
 	queue: Song[];
 	currentIndex: number;
 	currentPlaybackTime: number;
+	isShuffle: boolean;
 
 	initializeQueue: (songs: Song[]) => void;
 	playAlbum: (songs: Song[], startIndex?: number) => void;
@@ -20,6 +21,7 @@ interface PlayerStore {
 	savePlaybackPosition: () => Promise<void>;
 	loadPlaybackPosition: () => Promise<void>;
 	clearPlaybackPosition: () => Promise<void>;
+	toggleShuffle: () => void;
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -28,6 +30,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	queue: [],
 	currentIndex: -1,
 	currentPlaybackTime: 0,
+	isShuffle: false,
 
 	initializeQueue: (songs: Song[]) => {
 		set({
@@ -97,8 +100,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	},
 
 	playNext: () => {
-		const { currentIndex, queue } = get();
-		const nextIndex = currentIndex + 1;
+		const { currentIndex, queue, isShuffle } = get();
+		if (queue.length === 0) return;
+
+		let nextIndex = currentIndex + 1;
+		if (isShuffle) {
+			nextIndex = Math.floor(Math.random() * queue.length);
+		}
 
 		// if there is a next song to play, let's play it
 		if (nextIndex < queue.length) {
@@ -133,8 +141,13 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	},
 
 	playPrevious: () => {
-		const { currentIndex, queue } = get();
-		const prevIndex = currentIndex - 1;
+		const { currentIndex, queue, isShuffle } = get();
+		if (queue.length === 0) return;
+
+		let prevIndex = currentIndex - 1;
+		if (isShuffle) {
+			prevIndex = Math.floor(Math.random() * queue.length);
+		}
 
 		// theres a prev song
 		if (prevIndex >= 0) {
@@ -178,10 +191,18 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 		try {
 			const { currentSong, currentPlaybackTime } = get();
 			if (currentSong) {
-				await axiosInstance.post("/user/playback-position", {
+				console.log("Saving playback position:", {
+					songId: currentSong._id,
+					songTitle: currentSong.title,
+					playbackTime: currentPlaybackTime,
+				});
+				const result = await axiosInstance.post("/users/playback-position", {
 					currentSongId: currentSong._id,
 					currentPlaybackTime,
 				});
+				console.log("Playback position saved successfully:", result.data);
+			} else {
+				console.warn("Cannot save playback position - no current song");
 			}
 		} catch (error) {
 			console.error("Error saving playback position:", error);
@@ -190,36 +211,74 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
 	loadPlaybackPosition: async () => {
 		try {
-			const response = await axiosInstance.get("/user/playback-position");
+			console.log("Loading playback position...");
+			const response = await axiosInstance.get("/users/playback-position");
 			const { currentSongId, currentPlaybackTime } = response.data;
+
+			console.log("Loaded playback data:", {
+				currentSongId,
+				currentPlaybackTime,
+			});
 
 			if (currentSongId) {
 				// Fetch the full song data
 				try {
+					console.log("Fetching song data for ID:", currentSongId);
 					const songResponse = await axiosInstance.get(`/songs/by-id/${currentSongId}`);
 					const song = songResponse.data;
+
+					console.log("Song loaded successfully:", {
+						songId: song._id,
+						songTitle: song.title,
+						duration: song.duration,
+					});
+
+					// Get current queue and try to find the song in it
+					const currentQueue = get().queue;
+					let index = 0;
 					
+					if (currentQueue.length > 0) {
+						// Try to find the song in existing queue
+						const foundIndex = currentQueue.findIndex(s => s._id === currentSongId);
+						if (foundIndex >= 0) {
+							index = foundIndex;
+						}
+					}
+
 					set({
 						currentSong: song,
-						currentPlaybackTime,
-						isPlaying: true, // Automatically play the song when loading
+						currentPlaybackTime: currentPlaybackTime || 0,
+						isPlaying: false, // Prevent autoplay block when restoring
+						currentIndex: index,
+						// Only update queue if it's empty
+						...(currentQueue.length === 0 && { queue: [song] }),
 					});
+
+					console.log("Playback position restored - song set in store at index", index);
 				} catch (songError) {
-					console.error("Error fetching song:", songError);
+					console.error(
+						"Error fetching song:",
+						songError instanceof Error ? songError.message : songError
+					);
 					// If song not found, just set the playback time
 					set({
-						currentPlaybackTime,
+						currentPlaybackTime: currentPlaybackTime || 0,
 					});
 				}
+			} else {
+				console.log("No saved playback position found");
 			}
 		} catch (error) {
-			console.error("Error loading playback position:", error);
+			console.error(
+				"Error loading playback position:",
+				error instanceof Error ? error.message : error
+			);
 		}
 	},
 
 	clearPlaybackPosition: async () => {
 		try {
-			await axiosInstance.post("/user/playback-position", {
+			await axiosInstance.post("/users/playback-position", {
 				currentSongId: null,
 				currentPlaybackTime: 0,
 			});
@@ -229,5 +288,9 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 		} catch (error) {
 			console.error("Error clearing playback position:", error);
 		}
+	},
+
+	toggleShuffle: () => {
+		set((state) => ({ isShuffle: !state.isShuffle }));
 	},
 }));

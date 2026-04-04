@@ -5,34 +5,45 @@ import { Laptop2, ListMusic, Mic2, Pause, Play, Repeat, Shuffle, SkipBack, SkipF
 import { useEffect, useRef, useState } from "react";
 
 const formatTime = (seconds: number) => {
+	if (!isFinite(seconds) || isNaN(seconds)) return "0:00";
 	const minutes = Math.floor(seconds / 60);
 	const remainingSeconds = Math.floor(seconds % 60);
 	return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
 
 export const PlaybackControls = () => {
-	const { currentSong, isPlaying, togglePlay, playNext, playPrevious } = usePlayerStore();
+	// currentPlaybackTime từ store là nguồn sự thật duy nhất cho vị trí phát
+	// Nó được cập nhật bởi:
+	//   1. AudioPlayer.setCurrentPlaybackTime() qua timeupdate event (khi đang phát)
+	//   2. AudioPlayer khi restore vị trí sau reload (canplay handler)
+	//   3. handleSeek khi user kéo thanh
+	const {
+		currentSong,
+		isPlaying,
+		togglePlay,
+		playNext,
+		playPrevious,
+		isShuffle,
+		toggleShuffle,
+		currentPlaybackTime,
+	} = usePlayerStore();
 
 	const [volume, setVolume] = useState(75);
-	const [currentTime, setCurrentTime] = useState(0);
 	const [duration, setDuration] = useState(0);
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 
-	// Use duration from currentSong metadata if available
 	const displayDuration = duration > 0 ? duration : (currentSong?.duration || 0);
 
+	// Lắng nghe sự kiện từ audio element để lấy duration
 	useEffect(() => {
 		audioRef.current = document.querySelector("audio");
-
 		const audio = audioRef.current;
-		if (!audio) {
-			console.error("PlaybackControls: Audio element not found");
-			return;
-		}
+		if (!audio) return;
 
-		const updateTime = () => setCurrentTime(audio.currentTime);
 		const updateDuration = () => {
-			setDuration(audio.duration);
+			if (audio.duration && isFinite(audio.duration)) {
+				setDuration(audio.duration);
+			}
 		};
 
 		const handleError = () => {
@@ -42,32 +53,29 @@ export const PlaybackControls = () => {
 			});
 		};
 
-		audio.addEventListener("timeupdate", updateTime);
 		audio.addEventListener("loadedmetadata", updateDuration);
+		audio.addEventListener("durationchange", updateDuration);
 		audio.addEventListener("error", handleError);
 
-		const handleEnded = () => {
-			usePlayerStore.setState({ isPlaying: false });
-		};
-
-		audio.addEventListener("ended", handleEnded);
-
-		// Try to load metadata immediately if already available
-		if (audio.duration && audio.duration !== Infinity) {
+		// Nếu audio đã có duration (ví dụ sau khi restore)
+		if (audio.duration && isFinite(audio.duration)) {
 			setDuration(audio.duration);
 		}
 
 		return () => {
-			audio.removeEventListener("timeupdate", updateTime);
 			audio.removeEventListener("loadedmetadata", updateDuration);
+			audio.removeEventListener("durationchange", updateDuration);
 			audio.removeEventListener("error", handleError);
-			audio.removeEventListener("ended", handleEnded);
 		};
 	}, [currentSong]);
 
+	// Khi user kéo thanh seek
 	const handleSeek = (value: number[]) => {
 		if (audioRef.current && displayDuration > 0) {
-			audioRef.current.currentTime = value[0];
+			const newTime = value[0];
+			audioRef.current.currentTime = newTime;
+			// Cập nhật store ngay lập tức để UI phản hồi tức thì
+			usePlayerStore.setState({ currentPlaybackTime: newTime });
 		}
 	};
 
@@ -101,7 +109,8 @@ export const PlaybackControls = () => {
 						<Button
 							size='icon'
 							variant='ghost'
-							className='hidden sm:inline-flex hover:text-white text-zinc-400'
+							className={`hidden sm:inline-flex hover:text-white ${isShuffle ? "text-emerald-500" : "text-zinc-400"}`}
+							onClick={toggleShuffle}
 						>
 							<Shuffle className='h-4 w-4' />
 						</Button>
@@ -124,6 +133,7 @@ export const PlaybackControls = () => {
 						>
 							{isPlaying ? <Pause className='h-5 w-5' /> : <Play className='h-5 w-5' />}
 						</Button>
+
 						<Button
 							size='icon'
 							variant='ghost'
@@ -133,6 +143,7 @@ export const PlaybackControls = () => {
 						>
 							<SkipForward className='h-4 w-4' />
 						</Button>
+
 						<Button
 							size='icon'
 							variant='ghost'
@@ -142,21 +153,27 @@ export const PlaybackControls = () => {
 						</Button>
 					</div>
 
+					{/* Progress bar - dùng currentPlaybackTime từ store, cập nhật ngay kể cả khi pause */}
 					<div className='hidden sm:flex items-center gap-2 w-full'>
-						<div className='text-xs text-zinc-400'>{formatTime(currentTime)}</div>
+						<div className='text-xs text-zinc-400 w-10 text-right'>
+							{formatTime(currentPlaybackTime)}
+						</div>
 						<Slider
-							value={[currentTime]}
-							max={Math.max(displayDuration, currentTime, 1)}
+							value={[currentPlaybackTime]}
+							max={Math.max(displayDuration, currentPlaybackTime, 1)}
 							step={0.5}
 							className='w-full hover:cursor-grab active:cursor-grabbing'
 							onValueChange={handleSeek}
 							disabled={displayDuration === 0 || !isFinite(displayDuration)}
 						/>
-						<div className='text-xs text-zinc-400'>
-							{isFinite(displayDuration) ? formatTime(displayDuration) : "0:00"}
+						<div className='text-xs text-zinc-400 w-10'>
+							{isFinite(displayDuration) && displayDuration > 0
+								? formatTime(displayDuration)
+								: "0:00"}
 						</div>
 					</div>
 				</div>
+
 				{/* volume controls */}
 				<div className='hidden sm:flex items-center gap-4 min-w-[180px] w-[30%] justify-end'>
 					<Button size='icon' variant='ghost' className='hover:text-white text-zinc-400'>
