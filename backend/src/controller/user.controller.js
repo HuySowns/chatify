@@ -28,3 +28,53 @@ export const getMessages = async (req, res, next) => {
 		next(error);
 	}
 };
+
+export const updatePlaybackPosition = async (req, res, next) => {
+	try {
+		const userId = req.auth.userId;
+		const { currentSongId, currentPlaybackTime } = req.body;
+
+		if (currentSongId === null) {
+			// Nếu không có bài hát nào, xóa thông tin playback
+			await User.findOneAndUpdate(
+				{ clerkId: userId },
+				{
+					currentSongId: null,
+					currentPlaybackTime: 0,
+				},
+				{ new: true }
+			);
+		} else {
+			await User.findOneAndUpdate(
+				{ clerkId: userId },
+				{
+					currentSongId,
+					currentPlaybackTime,
+				},
+				{ new: true }
+			);
+		}
+
+		res.status(200).json({ success: true });
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const getPlaybackPosition = async (req, res, next) => {
+	try {
+		const userId = req.auth.userId;
+		const user = await User.findOne({ clerkId: userId });
+
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		res.status(200).json({
+			currentSongId: user.currentSongId,
+			currentPlaybackTime: user.currentPlaybackTime,
+		});
+	} catch (error) {
+		next(error);
+	}
+};

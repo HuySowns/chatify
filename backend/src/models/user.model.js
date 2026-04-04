@@ -15,6 +15,14 @@ const userSchema = new mongoose.Schema(
 			required: true,
 			unique: true,
 		},
+		currentSongId: {
+			type: String,
+			default: null,
+		},
+		currentPlaybackTime: {
+			type: Number,
+			default: 0,
+		},
 	},
 	{ timestamps: true } //  createdAt, updatedAt
 );

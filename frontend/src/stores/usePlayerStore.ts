@@ -1,12 +1,14 @@
 import { create } from "zustand";
 import { Song } from "@/types";
 import { useChatStore } from "./useChatStore";
+import { axiosInstance } from "@/lib/axios";
 
 interface PlayerStore {
 	currentSong: Song | null;
 	isPlaying: boolean;
 	queue: Song[];
 	currentIndex: number;
+	currentPlaybackTime: number;
 
 	initializeQueue: (songs: Song[]) => void;
 	playAlbum: (songs: Song[], startIndex?: number) => void;
@@ -14,6 +16,10 @@ interface PlayerStore {
 	togglePlay: () => void;
 	playNext: () => void;
 	playPrevious: () => void;
+	setCurrentPlaybackTime: (time: number) => void;
+	savePlaybackPosition: () => Promise<void>;
+	loadPlaybackPosition: () => Promise<void>;
+	clearPlaybackPosition: () => Promise<void>;
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -21,6 +27,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	isPlaying: false,
 	queue: [],
 	currentIndex: -1,
+	currentPlaybackTime: 0,
 
 	initializeQueue: (songs: Song[]) => {
 		set({
@@ -47,6 +54,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 			currentSong: song,
 			currentIndex: startIndex,
 			isPlaying: true,
+			currentPlaybackTime: 0,
 		});
 	},
 
@@ -66,6 +74,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 			currentSong: song,
 			isPlaying: true,
 			currentIndex: songIndex !== -1 ? songIndex : get().currentIndex,
+			currentPlaybackTime: 0,
 		});
 	},
 
@@ -107,6 +116,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 				currentSong: nextSong,
 				currentIndex: nextIndex,
 				isPlaying: true,
+				currentPlaybackTime: 0,
 			});
 		} else {
 			// no next song
@@ -121,6 +131,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 			}
 		}
 	},
+
 	playPrevious: () => {
 		const { currentIndex, queue } = get();
 		const prevIndex = currentIndex - 1;
@@ -141,6 +152,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 				currentSong: prevSong,
 				currentIndex: prevIndex,
 				isPlaying: true,
+				currentPlaybackTime: 0,
 			});
 		} else {
 			// no prev song
@@ -153,6 +165,69 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 					activity: `Idle`,
 				});
 			}
+		}
+	},
+
+	setCurrentPlaybackTime: (time: number) => {
+		set({
+			currentPlaybackTime: time,
+		});
+	},
+
+	savePlaybackPosition: async () => {
+		try {
+			const { currentSong, currentPlaybackTime } = get();
+			if (currentSong) {
+				await axiosInstance.post("/user/playback-position", {
+					currentSongId: currentSong._id,
+					currentPlaybackTime,
+				});
+			}
+		} catch (error) {
+			console.error("Error saving playback position:", error);
+		}
+	},
+
+	loadPlaybackPosition: async () => {
+		try {
+			const response = await axiosInstance.get("/user/playback-position");
+			const { currentSongId, currentPlaybackTime } = response.data;
+
+			if (currentSongId) {
+				// Fetch the full song data
+				try {
+					const songResponse = await axiosInstance.get(`/songs/by-id/${currentSongId}`);
+					const song = songResponse.data;
+					
+					set({
+						currentSong: song,
+						currentPlaybackTime,
+						isPlaying: true, // Automatically play the song when loading
+					});
+				} catch (songError) {
+					console.error("Error fetching song:", songError);
+					// If song not found, just set the playback time
+					set({
+						currentPlaybackTime,
+					});
+				}
+			}
+		} catch (error) {
+			console.error("Error loading playback position:", error);
+		}
+	},
+
+	clearPlaybackPosition: async () => {
+		try {
+			await axiosInstance.post("/user/playback-position", {
+				currentSongId: null,
+				currentPlaybackTime: 0,
+			});
+			set({
+				currentPlaybackTime: 0,
+			});
+		} catch (error) {
+			console.error("Error clearing playback position:", error);
 		}
 	},
 }));

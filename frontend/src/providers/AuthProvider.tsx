@@ -1,6 +1,7 @@
 import { axiosInstance } from "@/lib/axios";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
+import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useAuth } from "@clerk/clerk-react";
 import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,6 +16,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const [loading, setLoading] = useState(true);
 	const { checkAdminStatus } = useAuthStore();
 	const { initSocket, disconnectSocket } = useChatStore();
+	const { loadPlaybackPosition } = usePlayerStore();
 
 	useEffect(() => {
 		const initAuth = async () => {
@@ -24,6 +26,12 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 				updateApiToken(token);
 				if (token) {
 					await checkAdminStatus();
+					// Tải vị trí nghe đã lưu khi user login (không block nếu fail)
+					try {
+						await loadPlaybackPosition();
+					} catch (playbackError) {
+						console.warn("Could not load playback position:", playbackError);
+					}
 					// init socket
 					if (userId) initSocket(userId);
 				}
@@ -39,7 +47,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 		// clean up
 		return () => disconnectSocket();
-	}, [getToken, userId, checkAdminStatus, initSocket, disconnectSocket]);
+	}, [getToken, userId, checkAdminStatus, initSocket, disconnectSocket, loadPlaybackPosition]);
 
 	if (loading)
 		return (

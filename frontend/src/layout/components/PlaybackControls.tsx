@@ -18,17 +18,33 @@ export const PlaybackControls = () => {
 	const [duration, setDuration] = useState(0);
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 
+	// Use duration from currentSong metadata if available
+	const displayDuration = duration > 0 ? duration : (currentSong?.duration || 0);
+
 	useEffect(() => {
 		audioRef.current = document.querySelector("audio");
 
 		const audio = audioRef.current;
-		if (!audio) return;
+		if (!audio) {
+			console.error("PlaybackControls: Audio element not found");
+			return;
+		}
 
 		const updateTime = () => setCurrentTime(audio.currentTime);
-		const updateDuration = () => setDuration(audio.duration);
+		const updateDuration = () => {
+			setDuration(audio.duration);
+		};
+
+		const handleError = () => {
+			console.error("PlaybackControls: Audio error", {
+				code: audio.error?.code,
+				message: audio.error?.message,
+			});
+		};
 
 		audio.addEventListener("timeupdate", updateTime);
 		audio.addEventListener("loadedmetadata", updateDuration);
+		audio.addEventListener("error", handleError);
 
 		const handleEnded = () => {
 			usePlayerStore.setState({ isPlaying: false });
@@ -36,15 +52,21 @@ export const PlaybackControls = () => {
 
 		audio.addEventListener("ended", handleEnded);
 
+		// Try to load metadata immediately if already available
+		if (audio.duration && audio.duration !== Infinity) {
+			setDuration(audio.duration);
+		}
+
 		return () => {
 			audio.removeEventListener("timeupdate", updateTime);
 			audio.removeEventListener("loadedmetadata", updateDuration);
+			audio.removeEventListener("error", handleError);
 			audio.removeEventListener("ended", handleEnded);
 		};
 	}, [currentSong]);
 
 	const handleSeek = (value: number[]) => {
-		if (audioRef.current) {
+		if (audioRef.current && displayDuration > 0) {
 			audioRef.current.currentTime = value[0];
 		}
 	};
@@ -124,12 +146,15 @@ export const PlaybackControls = () => {
 						<div className='text-xs text-zinc-400'>{formatTime(currentTime)}</div>
 						<Slider
 							value={[currentTime]}
-							max={duration || 100}
-							step={1}
+							max={Math.max(displayDuration, currentTime, 1)}
+							step={0.5}
 							className='w-full hover:cursor-grab active:cursor-grabbing'
 							onValueChange={handleSeek}
+							disabled={displayDuration === 0 || !isFinite(displayDuration)}
 						/>
-						<div className='text-xs text-zinc-400'>{formatTime(duration)}</div>
+						<div className='text-xs text-zinc-400'>
+							{isFinite(displayDuration) ? formatTime(displayDuration) : "0:00"}
+						</div>
 					</div>
 				</div>
 				{/* volume controls */}
