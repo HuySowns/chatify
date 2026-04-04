@@ -97,6 +97,36 @@ export const createAlbum = async (req, res, next) => {
 	}
 };
 
+export const updateAlbum = async (req, res, next) => {
+	try {
+		const { id } = req.params;
+		const { title, artist, releaseYear } = req.body;
+		const imageFile = req.files?.imageFile;
+
+		let updateData = {
+			title,
+			artist,
+			releaseYear,
+		};
+
+		if (imageFile) {
+			const imageUrl = await uploadToCloudinary(imageFile);
+			updateData.imageUrl = imageUrl;
+		}
+
+		const album = await Album.findByIdAndUpdate(id, updateData, { new: true });
+
+		if (!album) {
+			return res.status(404).json({ message: "Album not found" });
+		}
+
+		res.status(200).json(album);
+	} catch (error) {
+		console.log("Error in updateAlbum", error);
+		next(error);
+	}
+};
+
 export const deleteAlbum = async (req, res, next) => {
 	try {
 		const { id } = req.params;
