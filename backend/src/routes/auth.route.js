@@ -1,4 +1,5 @@
 import { User } from "../models/user.model.js";
+import { Transaction } from "../models/transaction.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -52,18 +53,29 @@ export const authCallback = async (req, res, next) => {
 		const { id, firstName, lastName, imageUrl } = req.body;
 
 		// check if user already exists
-		const user = await User.findOne({ clerkId: id });
+		let user = await User.findOne({ clerkId: id });
 
 		if (!user) {
 			// signup
-			await User.create({
+			user = await User.create({
 				clerkId: id,
 				fullName: `${firstName || ""} ${lastName || ""}`.trim(),
 				imageUrl,
 			});
+		} else {
+			// KIỂM TRA TÍNH HỢP LỆ CỦA PREMIUM (Fix theo yêu cầu của bạn)
+			// Nếu User có cờ isPremium=true, ta phải check xem có ít nhất 1 giao dịch thành công không
+			if (user.isPremium) {
+				const hasTransaction = await Transaction.findOne({ userId: user._id, status: "completed" });
+				if (!hasTransaction) {
+					console.log(`Resetting premium for user ${user.fullName} due to missing transaction.`);
+					user.isPremium = false;
+					await user.save();
+				}
+			}
 		}
 
-		res.status(200).json({ success: true });
+		res.status(200).json({ success: true, user });
 	} catch (error) {
 		console.log("Error in auth callback", error);
 		next(error);

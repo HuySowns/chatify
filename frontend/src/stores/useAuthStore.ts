@@ -3,17 +3,21 @@ import { create } from "zustand";
 
 interface AuthStore {
 	isAdmin: boolean;
+	isPremium: boolean; // Bổ sung trạng thái Premium
 	isLoading: boolean;
 	error: string | null;
 
 	checkAdminStatus: () => Promise<void>;
+	setIsPremium: (status: boolean) => void;
 	reset: () => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
 	isAdmin: false,
+	isPremium: false,
 	isLoading: false,
 	error: null,
+
 
 	checkAdminStatus: async () => {
 		set({ isLoading: true, error: null });
@@ -27,7 +31,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
 		}
 	},
 
+	setIsPremium: (status: boolean) => {
+		set({ isPremium: status });
+	},
+
 	reset: () => {
-		set({ isAdmin: false, isLoading: false, error: null });
+		set({ isAdmin: false, isPremium: false, isLoading: false, error: null });
 	},
 }));
+

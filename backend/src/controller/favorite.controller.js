@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { getFavorites, createFavorite, deleteFavorite } from "../routes/favorite.route.js";
+import { getFavorites, toggleFavorite, deleteFavorite } from "../routes/favorite.route.js";
+import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.get("/", getFavorites);
-router.post("/", createFavorite);
-router.delete("/:id", deleteFavorite);
+router.get("/", protectRoute, getFavorites);
+router.post("/toggle", protectRoute, toggleFavorite);
+router.delete("/:id", protectRoute, deleteFavorite);
 
 export default router;
+

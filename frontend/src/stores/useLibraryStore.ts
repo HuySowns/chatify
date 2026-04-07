@@ -114,17 +114,25 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
 	toggleFavorite: async (targetId, targetType) => {
 		try {
-			const response = await axiosInstance.post("/favorites", { targetId, targetType });
+			// Gọi API toggle (thêm/xóa tự động ở backend)
+			const response = await axiosInstance.post("/favorites/toggle", { targetId, targetType });
 			const { favorites } = get();
-			const exists = favorites.find((f) => f.targetId === targetId);
+			
+			// Kiểm tra phản hồi từ backend để cập nhật store cục bộ
+			const isFavorite = response.data.isFavorite;
 
-			if (exists) {
+			if (!isFavorite) {
+				// Nếu backend báo đã xóa -> lọc bỏ khỏi danh sách cục bộ
 				set({ favorites: favorites.filter((f) => f.targetId !== targetId) });
+				toast.success("Đã xóa khỏi danh sách yêu thích");
 			} else {
+				// Nếu backend báo đã thêm -> đưa vào danh sách cục bộ
 				set({ favorites: [...favorites, response.data] });
+				toast.success("Đã thêm vào danh sách yêu thích");
 			}
 		} catch (error: any) {
-			toast.error("Action failed");
+			toast.error("Thao tác thất bại");
 		}
 	},
 }));
+

@@ -5,10 +5,13 @@ import { buttonVariants } from "./ui/button";
 import { Bell, LayoutDashboardIcon, Sparkles } from "lucide-react";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import UpgradeDialog from "./UpgradeDialog";
 
 const Topbar = () => {
-  const { isAdmin } = useAuthStore();
-	const { notifications, upgradeToPremium, isLoading } = useExtraStore();
+	const { isAdmin, isPremium } = useAuthStore();
+	const { notifications, isLoading } = useExtraStore();
+	const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
 
 	return (
 		<div
@@ -18,7 +21,7 @@ const Topbar = () => {
 		>
 			<div className='flex gap-2 items-center'>
 				<img src='/spotify.png' className='size-8' alt='Spotify logo' />
-				Spotify
+				<span className='font-bold text-white'>Chatify</span>
 			</div>
 			<div className='flex items-center gap-4'>
 				{isAdmin && (
@@ -46,17 +49,25 @@ const Topbar = () => {
 				</SignedOut>
 				<SignedIn>
 					<div className='flex items-center gap-4'>
-						<button
-							onClick={upgradeToPremium}
-							disabled={isLoading}
-							className={cn(
-								buttonVariants({ variant: "outline", size: "sm" }),
-								"text-emerald-400 border-emerald-400/50 hover:bg-emerald-400/10 hidden sm:flex"
-							)}
-						>
-							<Sparkles className='size-4 mr-2' />
-							Upgrade
-						</button>
+						{/* Nếu chưa là Premium thì hiện nút Nâng cấp, nếu rồi thì hiện Badge VIP */}
+						{!isPremium ? (
+							<button
+								onClick={() => setIsUpgradeOpen(true)}
+								disabled={isLoading}
+								className={cn(
+									buttonVariants({ variant: "outline", size: "sm" }),
+									"text-emerald-400 border-emerald-400/50 hover:bg-emerald-400/10 hidden sm:flex"
+								)}
+							>
+								<Sparkles className='size-4 mr-2' />
+								Upgrade
+							</button>
+						) : (
+							<div className='flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg'>
+								<Sparkles className='size-3' />
+								PREMIUM
+							</div>
+						)}
 
 						<div className='relative'>
 							<Bell className='size-5 text-zinc-400 hover:text-white cursor-pointer' />
@@ -69,7 +80,10 @@ const Topbar = () => {
 
 				<UserButton />
 			</div>
+
+			<UpgradeDialog isOpen={isUpgradeOpen} onOpenChange={setIsUpgradeOpen} />
 		</div>
 	);
 };
+
 export default Topbar;

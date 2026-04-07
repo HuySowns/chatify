@@ -33,8 +33,13 @@ const userSchema = new mongoose.Schema(
 			type: Number,
 			default: 0,
 		},
+		isPremium: {
+			type: Boolean,
+			default: false, // Mặc định là tài khoản miễn phí
+		},
 	},
 	{ timestamps: true } //  createdAt, updatedAt
+
 );
 
 export const User = mongoose.model("User", userSchema);
