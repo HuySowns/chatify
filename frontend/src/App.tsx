@@ -13,6 +13,7 @@ import { Toaster } from "react-hot-toast";
 import NotFoundPage from "./pages/404/NotFoundPage";
 import PlaylistPage from "./pages/playlist/PlaylistPage";
 import FavoritesPage from "./pages/favorites/FavoritesPage";
+import GenrePage from "./pages/genre/GenrePage"; // MỚI: Trang khám phá theo Thể loại
 
 function App() {
 	return (
@@ -33,6 +34,10 @@ function App() {
 					<Route path='/albums/:albumId' element={<AlbumPage />} />
 					<Route path='/playlists/:playlistId' element={<PlaylistPage />} />
 					<Route path='/favorites' element={<FavoritesPage />} />
+					
+					{/* MỚI: Route cho trang Thể loại nhạc */}
+					<Route path='/genres/:genreId' element={<GenrePage />} />
+					
 					<Route path='*' element={<NotFoundPage />} />
 				</Route>
 			</Routes>
@@ -40,6 +45,5 @@ function App() {
 		</>
 	);
 }
-
 
 export default App;

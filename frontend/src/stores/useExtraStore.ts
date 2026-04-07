@@ -1,5 +1,5 @@
 import { axiosInstance } from "@/lib/axios";
-import { Genre, Notification, Transaction } from "@/types";
+import { Genre, Notification, Song, Transaction } from "@/types";
 import toast from "react-hot-toast";
 import { create } from "zustand";
 import { useAuthStore } from "./useAuthStore";
@@ -7,6 +7,7 @@ import { useAuthStore } from "./useAuthStore";
 interface ExtraStore {
 	notifications: Notification[];
 	genres: Genre[];
+	genreSongs: Song[]; // MỚI: Danh sách bài hát theo thể loại đang chọn
 	transactions: Transaction[];
 	isLoading: boolean;
 	error: string | null;
@@ -16,6 +17,7 @@ interface ExtraStore {
 	clearNotifications: () => Promise<void>;
 	
 	fetchGenres: () => Promise<void>;
+	fetchSongsByGenre: (genreId: string) => Promise<void>; // MỚI
 	
 	fetchTransactions: () => Promise<void>;
 	fetchAllTransactions: () => Promise<void>;
@@ -26,6 +28,7 @@ interface ExtraStore {
 export const useExtraStore = create<ExtraStore>((set) => ({
 	notifications: [],
 	genres: [],
+	genreSongs: [],
 	transactions: [],
 	isLoading: false,
 	error: null,
@@ -69,6 +72,19 @@ export const useExtraStore = create<ExtraStore>((set) => ({
 			set({ genres: response.data });
 		} catch (error: any) {
 			console.log(error);
+		}
+	},
+
+	// MỚI: Tải bài hát thuộc một thể loại cụ thể
+	fetchSongsByGenre: async (genreId: string) => {
+		set({ isLoading: true, genreSongs: [] });
+		try {
+			const response = await axiosInstance.get(`/songs/genre/${genreId}`);
+			set({ genreSongs: response.data });
+		} catch (error: any) {
+			toast.error("Failed to fetch songs for this genre");
+		} finally {
+			set({ isLoading: false });
 		}
 	},
 
