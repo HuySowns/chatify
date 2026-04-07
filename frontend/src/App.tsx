@@ -11,6 +11,8 @@ import SignUpPage from "./pages/auth/SignUpPage";
 
 import { Toaster } from "react-hot-toast";
 import NotFoundPage from "./pages/404/NotFoundPage";
+import PlaylistPage from "./pages/playlist/PlaylistPage";
+import FavoritesPage from "./pages/favorites/FavoritesPage";
 
 function App() {
 	return (
@@ -29,6 +31,8 @@ function App() {
 					<Route path='/' element={<HomePage />} />
 					<Route path='/chat' element={<ChatPage />} />
 					<Route path='/albums/:albumId' element={<AlbumPage />} />
+					<Route path='/playlists/:playlistId' element={<PlaylistPage />} />
+					<Route path='/favorites' element={<FavoritesPage />} />
 					<Route path='*' element={<NotFoundPage />} />
 				</Route>
 			</Routes>
@@ -36,5 +40,6 @@ function App() {
 		</>
 	);
 }
+
 
 export default App;

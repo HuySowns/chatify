@@ -69,7 +69,7 @@ const AlbumsTable = ({ searchTerm = "" }: AlbumsTableProps) => {
 								<TableCell className='text-right'>
 									<div className='flex gap-2 justify-end'>
 										<AlbumDetailModal album={album} />
-										<UpdateAlbumDialog album={album} />
+										<UpdateAlbumDialog album={album} onSuccess={() => fetchAlbums()} />
 										<Button
 											variant='ghost'
 											size='sm'

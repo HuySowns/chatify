@@ -1,39 +1,40 @@
-import { axiosInstance } from "@/lib/axios";
+import { axiosInstance, setupAxiosInterceptors } from "@/lib/axios";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useLibraryStore } from "@/stores/useLibraryStore";
+import { useSocialStore } from "@/stores/useSocialStore";
+import { useExtraStore } from "@/stores/useExtraStore";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const updateApiToken = (token: string | null) => {
-	if (token) {
-		axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-		// Lưu token vào window để AudioPlayer dùng trong synchronous XHR (beforeunload)
-		(window as any).__chatifyAuthToken = token;
-	} else {
-		delete axiosInstance.defaults.headers.common["Authorization"];
-		(window as any).__chatifyAuthToken = null;
-	}
-};
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const { getToken, userId } = useAuth();
 	const { user } = useUser();
 	const [loading, setLoading] = useState(true);
+	
 	const { checkAdminStatus } = useAuthStore();
 	const { initSocket, disconnectSocket } = useChatStore();
 	const { loadPlaybackPosition } = usePlayerStore();
+	const { fetchPlaylists, fetchFavorites } = useLibraryStore();
+	const { fetchFollows } = useSocialStore();
+	const { fetchNotifications, fetchGenres } = useExtraStore();
 
-	// Initialize auth and load playback position
+	// 1. Cấu hình Axios Interceptor (Bộ lọc tự động)
+	// Task: Trước mỗi khi gửi request, Axios sẽ tự gọi getToken() của Clerk
+	// Điều này đảm bảo Token gửi lên Backend luôn là mới nhất và không bị hết hạn (Unauthorized)
+	useEffect(() => {
+		setupAxiosInterceptors(getToken);
+	}, [getToken]);
+
+	// 2. Đồng bộ User vào Database và tải dữ liệu ban đầu
 	useEffect(() => {
 		const initAuth = async () => {
 			try {
 				const token = await getToken();
-				console.log("Token from Clerk:", token ? "✓ Received" : "✗ No token");
-				updateApiToken(token);
 				if (token && user) {
-					// sync user to db
+					// Đồng bộ thông tin user từ Clerk sang MongoDB
 					await axiosInstance.post("/auth/callback", {
 						id: user.id,
 						firstName: user.firstName,
@@ -41,19 +42,27 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 						imageUrl: user.imageUrl,
 					});
 
-					await checkAdminStatus();
+					// Tải tất cả dữ liệu cần thiết cho app
+					await Promise.all([
+						checkAdminStatus(),
+						fetchPlaylists(),
+						fetchFavorites(),
+						fetchFollows(),
+						fetchNotifications(),
+						fetchGenres(),
+					]);
+
 					// Tải vị trí nghe đã lưu khi user login
 					try {
 						await loadPlaybackPosition();
 					} catch (playbackError) {
 						console.warn("Could not load playback position:", playbackError);
 					}
-					// init socket
+					// Khởi tạo socket connection
 					if (userId) initSocket(userId);
 				}
 			} catch (error: any) {
 				console.error("Error in initAuth:", error);
-				updateApiToken(null);
 			} finally {
 				setLoading(false);
 			}
@@ -68,7 +77,20 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		return () => {
 			disconnectSocket();
 		};
-	}, [getToken, userId, user, checkAdminStatus, initSocket, disconnectSocket, loadPlaybackPosition]);
+	}, [
+		getToken, 
+		userId, 
+		user, 
+		checkAdminStatus, 
+		initSocket, 
+		disconnectSocket, 
+		loadPlaybackPosition,
+		fetchPlaylists,
+		fetchFavorites,
+		fetchFollows,
+		fetchNotifications,
+		fetchGenres
+	]);
 
 	if (loading)
 		return (
@@ -80,3 +102,4 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	return <>{children}</>;
 };
 export default AuthProvider;
+
