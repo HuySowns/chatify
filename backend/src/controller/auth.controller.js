@@ -1,24 +1,10 @@
-import { User } from "../models/user.model.js";
+import { Router } from "express";
+import { authCallback, signup, login } from "../routes/auth.route.js";
 
-export const authCallback = async (req, res, next) => {
-	try {
-		const { id, firstName, lastName, imageUrl } = req.body;
+const router = Router();
 
-		// check if user already exists
-		const user = await User.findOne({ clerkId: id });
+router.post("/signup", signup);
+router.post("/login", login);
+router.post("/callback", authCallback);
 
-		if (!user) {
-			// signup
-			await User.create({
-				clerkId: id,
-				fullName: `${firstName || ""} ${lastName || ""}`.trim(),
-				imageUrl,
-			});
-		}
-
-		res.status(200).json({ success: true });
-	} catch (error) {
-		console.log("Error in auth callback", error);
-		next(error);
-	}
-};
+export default router;

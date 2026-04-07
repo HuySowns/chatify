@@ -1,0 +1,178 @@
+{
+	"info": {
+		"name": "Music API - 11 Models",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Sign up",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"fullName\": \"User 1\",\n    \"email\": \"user@gmail.com\",\n    \"password\": \"123456\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/auth/signup", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "auth", "signup"]}
+					}
+				},
+				{
+					"name": "Log in",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"email\": \"user@gmail.com\",\n    \"password\": \"123456\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/auth/login", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "auth", "login"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Playlists",
+			"item": [
+				{
+					"name": "Get Playlists",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/playlists", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "playlists"]}
+					}
+				},
+				{
+					"name": "Create Playlist",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"title\": \"Nhạc Lofi\",\n    \"description\": \"Chill\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/playlists", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "playlists"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Genres",
+			"item": [
+				{
+					"name": "Get Genres",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/genres", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "genres"]}
+					}
+				},
+				{
+					"name": "Create Genre",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"name\": \"Pop\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/genres", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "genres"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Transactions",
+			"item": [
+				{
+					"name": "Get Transactions",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/transactions", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "transactions"]}
+					}
+				},
+				{
+					"name": "Create Transaction",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"amount\": 50000,\n    \"description\": \"Nạp VIP\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/transactions", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "transactions"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Favorites",
+			"item": [
+				{
+					"name": "Get Favorites",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/favorites", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "favorites"]}
+					}
+				},
+				{
+					"name": "Create Favorite",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"targetId\": \"666666666666666666666666\",\n    \"targetType\": \"Song\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/favorites", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "favorites"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Comments",
+			"item": [
+				{
+					"name": "Get Comments",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/comments", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "comments"]}
+					}
+				},
+				{
+					"name": "Create Comment",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"content\": \"Bài hát rất hay!\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/comments", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "comments"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Notifications",
+			"item": [
+				{
+					"name": "Get Notifications",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/notifications", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "notifications"]}
+					}
+				},
+				{
+					"name": "Create Notification",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"message\": \"Bạn có tin nhắn mới\",\n    \"type\": \"system\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/notifications", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "notifications"]}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Follows",
+			"item": [
+				{
+					"name": "Get Follows",
+					"request": {
+						"method": "GET",
+						"url": {"raw": "http://localhost:5000/api/follows", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "follows"]}
+					}
+				},
+				{
+					"name": "Create Follow",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"followingId\": \"666666666666666666666666\"\n}"},
+						"url": {"raw": "http://localhost:5000/api/follows", "protocol": "http", "host": ["localhost"], "port": "5000", "path": ["api", "follows"]}
+					}
+				}
+			]
+		}
+	]
+}
