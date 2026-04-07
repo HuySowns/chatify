@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
-import { Clock, Pause, Play } from "lucide-react";
+import { useLibraryStore } from "@/stores/useLibraryStore";
+import { Clock, Heart, Pause, Play } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 export const formatDuration = (seconds: number) => {
 	const minutes = Math.floor(seconds / 60);
@@ -12,10 +14,14 @@ export const formatDuration = (seconds: number) => {
 	return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
 
+import CommentSection from "./components/CommentSection";
+import AddToPlaylist from "./components/AddToPlaylist";
+
 const AlbumPage = () => {
 	const { albumId } = useParams();
 	const { fetchAlbumById, currentAlbum, isLoading } = useMusicStore();
 	const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
+	const { favorites, toggleFavorite } = useLibraryStore();
 
 	useEffect(() => {
 		if (albumId) fetchAlbumById(albumId);
@@ -44,7 +50,7 @@ const AlbumPage = () => {
 		<div className='h-full'>
 			<ScrollArea className='h-full rounded-md'>
 				{/* Main Content */}
-				<div className='relative min-h-full'>
+				<div className='relative min-h-full pb-20'>
 					{/* bg gradient */}
 					<div
 						className='absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80
@@ -136,13 +142,41 @@ const AlbumPage = () => {
 													</div>
 												</div>
 												<div className='flex items-center'>{song.createdAt.split("T")[0]}</div>
-												<div className='flex items-center'>{formatDuration(song.duration)}</div>
+												<div className='flex items-center gap-4'>
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															toggleFavorite(song._id, "Song");
+														}}
+														className='hover:scale-110 transition-transform opacity-0 group-hover:opacity-100'
+													>
+														<Heart
+															className={cn(
+																"size-4",
+																favorites.some((f) => f.targetId === song._id)
+																	? "fill-green-500 text-green-500"
+																	: "text-zinc-400"
+															)}
+														/>
+													</button>
+													
+													<AddToPlaylist songId={song._id} />
+													
+													<span>{formatDuration(song.duration)}</span>
+												</div>
 											</div>
 										);
 									})}
 								</div>
 							</div>
 						</div>
+
+						{/* Comment Section */}
+						{currentAlbum && (
+							<div className='max-w-4xl mx-auto'>
+								<CommentSection targetId={currentAlbum._id} targetType='Album' />
+							</div>
+						)}
 					</div>
 				</div>
 			</ScrollArea>

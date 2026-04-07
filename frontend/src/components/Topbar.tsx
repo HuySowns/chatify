@@ -1,13 +1,14 @@
-import { SignedOut, UserButton } from "@clerk/clerk-react";
-import { LayoutDashboardIcon } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useExtraStore } from "@/stores/useExtraStore";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "./ui/button";
+import { Bell, LayoutDashboardIcon, Sparkles } from "lucide-react";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
 
 const Topbar = () => {
-	const { isAdmin } = useAuthStore();
-	console.log({ isAdmin });
+  const { isAdmin } = useAuthStore();
+	const { notifications, upgradeToPremium, isLoading } = useExtraStore();
 
 	return (
 		<div
@@ -43,6 +44,28 @@ const Topbar = () => {
 						</Link>
 					</div>
 				</SignedOut>
+				<SignedIn>
+					<div className='flex items-center gap-4'>
+						<button
+							onClick={upgradeToPremium}
+							disabled={isLoading}
+							className={cn(
+								buttonVariants({ variant: "outline", size: "sm" }),
+								"text-emerald-400 border-emerald-400/50 hover:bg-emerald-400/10 hidden sm:flex"
+							)}
+						>
+							<Sparkles className='size-4 mr-2' />
+							Upgrade
+						</button>
+
+						<div className='relative'>
+							<Bell className='size-5 text-zinc-400 hover:text-white cursor-pointer' />
+							{notifications.filter((n) => !n.isRead).length > 0 && (
+								<span className='absolute -top-1 -right-1 size-2 bg-emerald-500 rounded-full' />
+							)}
+						</div>
+					</div>
+				</SignedIn>
 
 				<UserButton />
 			</div>

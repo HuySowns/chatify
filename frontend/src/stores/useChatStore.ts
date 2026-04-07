@@ -103,6 +103,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 				});
 			});
 
+			socket.on("new_notification", (notification: any) => {
+				const { notifications } = (window as any).useExtraStore?.getState() || { notifications: [] };
+				(window as any).useExtraStore?.setState({
+					notifications: [notification, ...notifications],
+				});
+			});
+
 			set({ isConnected: true });
 		}
 	},
