@@ -14,7 +14,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const { user } = useUser();
 	const [loading, setLoading] = useState(true);
 	
-	const { checkAdminStatus } = useAuthStore();
+	const { checkAdminStatus, setIsPremium } = useAuthStore();
 	const { initSocket, disconnectSocket } = useChatStore();
 	const { loadPlaybackPosition } = usePlayerStore();
 	const { fetchPlaylists, fetchFavorites } = useLibraryStore();
@@ -35,12 +35,17 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 				const token = await getToken();
 				if (token && user) {
 					// Đồng bộ thông tin user từ Clerk sang MongoDB
-					await axiosInstance.post("/auth/callback", {
+					const response = await axiosInstance.post("/auth/callback", {
 						id: user.id,
 						firstName: user.firstName,
 						lastName: user.lastName,
 						imageUrl: user.imageUrl,
 					});
+
+					// Cập nhật trạng thái Premium từ DB
+					if (response.data.user) {
+						setIsPremium(response.data.user.isPremium || false);
+					}
 
 					// Tải tất cả dữ liệu cần thiết cho app
 					await Promise.all([
@@ -51,6 +56,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 						fetchNotifications(),
 						fetchGenres(),
 					]);
+
 
 					// Tải vị trí nghe đã lưu khi user login
 					try {

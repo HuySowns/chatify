@@ -1,10 +1,12 @@
 import { useAuthStore } from "@/stores/useAuthStore";
 import Header from "./components/Header";
 import DashboardStats from "./components/DashboardStats";
-import { Album, Music } from "lucide-react";
+import { Album, Music, CreditCard } from "lucide-react";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SongsTabContent from "./components/SongsTabContent";
 import AlbumsTabContent from "./components/AlbumsTabContent";
+import TransactionsTable from "./components/TransactionsTable";
 import { useEffect } from "react";
 import { useMusicStore } from "@/stores/useMusicStore";
 
@@ -40,6 +42,10 @@ const AdminPage = () => {
 						<Album className='mr-2 size-4' />
 						Albums
 					</TabsTrigger>
+					<TabsTrigger value='transactions' className='data-[state=active]:bg-zinc-700'>
+						<CreditCard className='mr-2 size-4' />
+						Transactions
+					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value='songs'>
@@ -47,6 +53,9 @@ const AdminPage = () => {
 				</TabsContent>
 				<TabsContent value='albums'>
 					<AlbumsTabContent />
+				</TabsContent>
+				<TabsContent value='transactions'>
+					<TransactionsTable />
 				</TabsContent>
 			</Tabs>
 		</div>

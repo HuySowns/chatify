@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLibraryStore } from "@/stores/useLibraryStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
-import { Clock, Heart, Pause, Play, Trash2, Edit, Music, Upload } from "lucide-react";
-import { useState, useRef } from "react";
+import { Clock, Pause, Play, Trash2, Edit, Music, Upload } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "../album/AlbumPage";
+import LikeButton from "@/components/LikeButton";
 import {
 	Dialog,
 	DialogContent,
@@ -22,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 const PlaylistPage = () => {
 	const { playlistId } = useParams();
 	const navigate = useNavigate();
-	const { playlists, deletePlaylist, toggleFavorite, favorites, updatePlaylist, isLoading } = useLibraryStore();
+	const { playlists, deletePlaylist, fetchPlaylists, updatePlaylist, isLoading } = useLibraryStore();
 	const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
 
 	const currentPlaylist = playlists.find((p) => p._id === playlistId);
@@ -34,6 +35,10 @@ const PlaylistPage = () => {
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		fetchPlaylists();
+	}, [fetchPlaylists]);
 
 	if (!currentPlaylist) return null;
 
@@ -114,9 +119,9 @@ const PlaylistPage = () => {
 
 							<div className='flex flex-col justify-end'>
 								<p className='text-sm font-medium'>Playlist</p>
-								<h1 className='text-7xl font-bold my-4'>{currentPlaylist.title}</h1>
+								<h1 className='text-7xl font-bold my-4 uppercase'>{currentPlaylist.title}</h1>
 								<div className='flex items-center gap-2 text-sm text-zinc-100'>
-									<span className='font-medium text-white'>Your Collection</span>
+									<span className='font-medium text-white font-bold opacity-80'>Your Collection</span>
 									<span>• {currentPlaylist.songs.length} songs</span>
 									{currentPlaylist.description && (
 										<span className='text-zinc-400 italic font-light'>• {currentPlaylist.description}</span>
@@ -129,12 +134,12 @@ const PlaylistPage = () => {
 							<Button
 								onClick={handlePlayPlaylist}
 								size='icon'
-								className='w-14 h-14 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 transition-all'
+								className='w-14 h-14 rounded-full bg-green-500 hover:bg-green-400 hover:scale-105 transition-all text-black'
 							>
 								{isPlaying && currentPlaylist.songs.some((song) => song._id === currentSong?._id) ? (
-									<Pause className='h-7 w-7 text-black' />
+									<Pause className='h-7 w-7' />
 								) : (
-									<Play className='h-7 w-7 text-black' />
+									<Play className='h-7 w-7' />
 								)}
 							</Button>
 
@@ -182,7 +187,10 @@ const PlaylistPage = () => {
 											<div
 												key={song._id}
 												onClick={() => handlePlaySong(index)}
-												className={`grid grid-cols-[16px_4fr_2fr_1fr] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer`}
+												className={cn(
+													"grid grid-cols-[16px_4fr_2fr_1fr] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer",
+													isCurrentSong && "bg-white/5"
+												)}
 											>
 												<div className='flex items-center justify-center'>
 													{isCurrentSong && isPlaying ? (
@@ -190,33 +198,19 @@ const PlaylistPage = () => {
 													) : (
 														<span className='group-hover:hidden'>{index + 1}</span>
 													)}
-													{!isCurrentSong && <Play className='h-4 w-4 hidden group-hover:block' />}
+													{(!isCurrentSong || !isPlaying) && <Play className='h-4 w-4 hidden group-hover:block text-white' />}
 												</div>
 
 												<div className='flex items-center gap-3'>
-													<img src={song.imageUrl} alt={song.title} className='size-10' />
+													<img src={song.imageUrl} alt={song.title} className='size-10 rounded' />
 													<div>
-														<div className={`font-medium text-white`}>{song.title}</div>
-														<div>{song.artist}</div>
+														<div className={cn("font-medium", isCurrentSong ? "text-green-500" : "text-white")}>{song.title}</div>
+														<div className='text-zinc-400'>{song.artist}</div>
 													</div>
 												</div>
 												<div className='flex items-center'>{song.createdAt.split("T")[0]}</div>
 												<div className='flex items-center gap-4'>
-													<button
-														onClick={(e) => {
-															e.stopPropagation();
-															toggleFavorite(song._id, "Song");
-														}}
-													>
-														<Heart
-															className={cn(
-																"size-4",
-																favorites.some((f) => f.targetId === song._id)
-																	? "fill-green-500 text-green-500"
-																	: "text-zinc-400"
-															)}
-														/>
-													</button>
+													<LikeButton targetId={song._id} targetType='Song' />
 													<span>{formatDuration(song.duration)}</span>
 												</div>
 											</div>
@@ -229,7 +223,6 @@ const PlaylistPage = () => {
 				</div>
 			</ScrollArea>
 
-			{/* Edit Dialog */}
 			<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
 				<DialogContent className='bg-zinc-900 border-zinc-800 text-white'>
 					<DialogHeader>
@@ -275,7 +268,7 @@ const PlaylistPage = () => {
 							<Button type='button' variant='ghost' onClick={() => setIsEditOpen(false)} className='text-zinc-400'>
 								Cancel
 							</Button>
-							<Button type='submit' disabled={isLoading} className='bg-white text-black hover:bg-white/90'>
+							<Button type='submit' disabled={isLoading} className='bg-white text-black hover:bg-white/90 font-bold'>
 								{isLoading ? "Saving..." : "Save Changes"}
 							</Button>
 						</DialogFooter>
