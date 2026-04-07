@@ -8,12 +8,28 @@ import { useMusicStore } from "@/stores/useMusicStore";
 import LikeButton from "@/components/LikeButton";
 import { cn } from "@/lib/utils";
 
+import { useEffect } from "react";
+
 const FavoritesPage = () => {
-	const { favorites } = useLibraryStore();
-	const { songs } = useMusicStore(); // Get all songs to display the favorite ones
+	const { favorites, fetchFavorites } = useLibraryStore();
+	const { songs, fetchSongs } = useMusicStore(); 
 	const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
 
-	const favoriteSongs = songs.filter((s) => favorites.some((f) => f.targetId === s._id));
+	useEffect(() => {
+		fetchFavorites();
+		fetchSongs();
+	}, [fetchFavorites, fetchSongs]);
+
+
+	// Lọc danh sách bài hát yêu thích (Dùng helper .toString() để so sánh chuẩn ID tránh lỗi String vs Object)
+	const favoriteSongs = songs.filter((s) => 
+		favorites.some((f) => {
+			const fid = typeof f.targetId === "string" 
+				? f.targetId 
+				: (f.targetId as any)?._id?.toString() || f.targetId?.toString();
+			return fid === s._id?.toString();
+		})
+	);
 
 	const handlePlayFavorites = () => {
 		if (favoriteSongs.length === 0) return;
@@ -41,8 +57,8 @@ const FavoritesPage = () => {
 								<Heart className='size-20 text-white' fill='white' />
 							</div>
 							<div className='flex flex-col justify-end'>
-								<p className='text-sm font-medium'>Playlist</p>
-								<h1 className='text-7xl font-bold my-4'>Liked Songs</h1>
+								<p className='text-sm font-medium text-white'>Playlist</p>
+								<h1 className='text-7xl font-bold my-4 text-white'>Liked Songs</h1>
 								<p className='text-sm text-zinc-100 font-medium opacity-80'>{favoriteSongs.length} songs</p>
 							</div>
 						</div>
@@ -109,7 +125,7 @@ const FavoritesPage = () => {
 														<div className='text-zinc-400 font-light'>{song.artist}</div>
 													</div>
 												</div>
-												<div className='flex items-center'>{song.createdAt.split("T")[0]}</div>
+												<div className='flex items-center'>{song.createdAt?.split("T")[0]}</div>
 												<div className='flex items-center gap-4'>
 													<LikeButton targetId={song._id} targetType='Song' />
 													<span>{formatDuration(song.duration)}</span>

@@ -11,6 +11,7 @@ interface SocialStore {
 
 	fetchComments: (targetId: string, targetType: "Song" | "Album") => Promise<void>;
 	postComment: (data: { songId?: string; albumId?: string; content: string }) => Promise<void>;
+	updateComment: (id: string, content: string) => Promise<void>; // MỚI
 	deleteComment: (id: string) => Promise<void>;
 	
 	fetchFollows: () => Promise<void>;
@@ -38,10 +39,24 @@ export const useSocialStore = create<SocialStore>((set, get) => ({
 	postComment: async (data) => {
 		try {
 			const response = await axiosInstance.post("/comments", data);
-			set((state) => ({ comments: [...state.comments, response.data] }));
+			set((state) => ({ comments: [response.data, ...state.comments] }));
 			toast.success("Comment posted");
 		} catch (error: any) {
 			toast.error("Failed to post comment");
+		}
+	},
+
+	// MỚI: Cập nhật bình luận hiện có
+	updateComment: async (id, content) => {
+		try {
+			const response = await axiosInstance.put(`/comments/${id}`, { content });
+			const { comments } = get();
+			set({
+				comments: comments.map((c) => (c._id === id ? response.data : c)),
+			});
+			toast.success("Comment updated");
+		} catch (error: any) {
+			toast.error("Failed to update comment");
 		}
 	},
 

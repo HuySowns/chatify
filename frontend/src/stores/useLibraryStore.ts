@@ -40,12 +40,11 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 	createPlaylist: async (formData: FormData) => {
 		set({ isLoading: true, error: null });
 		try {
-			// Sử dụng FormData để gửi kèm file ảnh lên Server
 			const response = await axiosInstance.post("/playlists", formData, {
 				headers: { "Content-Type": "multipart/form-data" },
 			});
 			set((state) => ({ playlists: [...state.playlists, response.data] }));
-			toast.success("Playlist created with image");
+			toast.success("Playlist created");
 		} catch (error: any) {
 			toast.error("Failed to create playlist");
 		} finally {
@@ -84,15 +83,11 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
 	addSongToPlaylist: async (playlistId, songId) => {
 		try {
-			// 1. Gọi API thêm bài hát
 			const response = await axiosInstance.post(`/playlists/${playlistId}/songs`, { songId });
-			
-			// 2. Cập nhật lại state của playlists trong store để giao diện hiển thị ngay bài hát mới
 			const { playlists } = get();
 			const updatedPlaylists = playlists.map((p) => 
 				p._id === playlistId ? response.data : p
 			);
-			
 			set({ playlists: updatedPlaylists });
 			toast.success("Song added to playlist");
 		} catch (error: any) {
@@ -114,25 +109,25 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
 	toggleFavorite: async (targetId, targetType) => {
 		try {
-			// Gọi API toggle (thêm/xóa tự động ở backend)
 			const response = await axiosInstance.post("/favorites/toggle", { targetId, targetType });
 			const { favorites } = get();
-			
-			// Kiểm tra phản hồi từ backend để cập nhật store cục bộ
 			const isFavorite = response.data.isFavorite;
 
 			if (!isFavorite) {
-				// Nếu backend báo đã xóa -> lọc bỏ khỏi danh sách cục bộ
-				set({ favorites: favorites.filter((f) => f.targetId !== targetId) });
-				toast.success("Đã xóa khỏi danh sách yêu thích");
+				// Cần so sánh ID chuẩn (.toString()) vì targetId có thể là object nếu được populate bài sau
+				set({ 
+					favorites: favorites.filter((f) => {
+						const fid = typeof f.targetId === "string" ? f.targetId : (f.targetId as any)?._id?.toString() || f.targetId?.toString();
+						return fid !== targetId.toString();
+					}) 
+				});
+				toast.success("Removed from favorites");
 			} else {
-				// Nếu backend báo đã thêm -> đưa vào danh sách cục bộ
 				set({ favorites: [...favorites, response.data] });
-				toast.success("Đã thêm vào danh sách yêu thích");
+				toast.success("Added to favorites");
 			}
 		} catch (error: any) {
-			toast.error("Thao tác thất bại");
+			toast.error("Action failed");
 		}
 	},
 }));
-

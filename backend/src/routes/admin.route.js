@@ -2,7 +2,7 @@ import { Song } from "../models/song.model.js";
 import { Album } from "../models/album.model.js";
 import cloudinary from "../lib/cloudinary.js";
 
-// helper function for cloudinary uploads
+// Helper function để upload file lên Cloudinary
 const uploadToCloudinary = async (file) => {
 	try {
 		const result = await cloudinary.uploader.upload(file.tempFilePath, {
@@ -17,13 +17,11 @@ const uploadToCloudinary = async (file) => {
 
 export const createSong = async (req, res, next) => {
 	try {
-		console.log("Create song request - User ID:", req.auth?.userId);
-		
 		if (!req.files || !req.files.audioFile || !req.files.imageFile) {
 			return res.status(400).json({ message: "Please upload all files" });
 		}
 
-		const { title, artist, albumId, duration } = req.body;
+		const { title, artist, albumId, genreId, duration } = req.body;
 		const audioFile = req.files.audioFile;
 		const imageFile = req.files.imageFile;
 
@@ -37,11 +35,12 @@ export const createSong = async (req, res, next) => {
 			imageUrl,
 			duration,
 			albumId: albumId || null,
+			genreId: genreId || null, // MỚI: Thêm thể loại khi tạo
 		});
 
 		await song.save();
 
-		// if song belongs to an album, update the album's songs array
+		// Nếu bài hát thuộc album, cập nhật mảng songs của album đó
 		if (albumId) {
 			await Album.findByIdAndUpdate(albumId, {
 				$push: { songs: song._id },
@@ -54,13 +53,60 @@ export const createSong = async (req, res, next) => {
 	}
 };
 
+// MỚI: Cấu trúc cập nhật bài hát (Hỗ trợ đổi Metadata & Files)
+export const updateSong = async (req, res, next) => {
+	try {
+		const { id } = req.params;
+		const { title, artist, albumId, genreId, duration } = req.body;
+		
+		const song = await Song.findById(id);
+		if (!song) return res.status(404).json({ message: "Song not found" });
+
+		let updateData = {
+			title,
+			artist,
+			duration: duration || song.duration,
+			albumId: albumId === "none" ? null : (albumId || song.albumId),
+			genreId: genreId === "none" ? null : (genreId || song.genreId),
+		};
+
+		// 1. Xử lý thay đổi Album (Nếu có)
+		if (albumId && albumId !== song.albumId?.toString()) {
+			// Xóa ID bài hát khỏi Album cũ
+			if (song.albumId) {
+				await Album.findByIdAndUpdate(song.albumId, { $pull: { songs: song._id } });
+			}
+			// Thêm ID bài hát vào Album mới
+			if (albumId !== "none") {
+				await Album.findByIdAndUpdate(albumId, { $push: { songs: song._id } });
+			}
+		}
+
+		// 2. Xử lý upload Audio mới (Nếu có)
+		if (req.files?.audioFile) {
+			const audioUrl = await uploadToCloudinary(req.files.audioFile);
+			updateData.audioUrl = audioUrl;
+		}
+
+		// 3. Xử lý upload Image mới (Nếu có)
+		if (req.files?.imageFile) {
+			const imageUrl = await uploadToCloudinary(req.files.imageFile);
+			updateData.imageUrl = imageUrl;
+		}
+
+		const updatedSong = await Song.findByIdAndUpdate(id, updateData, { new: true });
+		res.status(200).json(updatedSong);
+	} catch (error) {
+		console.log("Error in updateSong", error);
+		next(error);
+	}
+};
+
 export const deleteSong = async (req, res, next) => {
 	try {
 		const { id } = req.params;
-
 		const song = await Song.findById(id);
 
-		// if song belongs to an album, update the album's songs array
 		if (song.albumId) {
 			await Album.findByIdAndUpdate(song.albumId, {
 				$pull: { songs: song._id },
@@ -68,7 +114,6 @@ export const deleteSong = async (req, res, next) => {
 		}
 
 		await Song.findByIdAndDelete(id);
-
 		res.status(200).json({ message: "Song deleted successfully" });
 	} catch (error) {
 		console.log("Error in deleteSong", error);
@@ -76,6 +121,7 @@ export const deleteSong = async (req, res, next) => {
 	}
 };
 
+// ... giữ nguyên phần Album
 export const createAlbum = async (req, res, next) => {
 	try {
 		const { title, artist, releaseYear } = req.body;

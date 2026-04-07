@@ -27,6 +27,12 @@ const songSchema = new mongoose.Schema(
 			ref: "Album",
 			required: false,
 		},
+		// MỚI: Thêm trường Thể loại (Genre) để phân loại nhạc
+		genreId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Genre",
+			required: false,
+		},
 	},
 	{ timestamps: true }
 );
