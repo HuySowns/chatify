@@ -1,7 +1,6 @@
 import { SignedOut, UserButton } from "@clerk/clerk-react";
 import { LayoutDashboardIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import SignInOAuthButtons from "./SignInOAuthButtons";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "./ui/button";
@@ -29,7 +28,20 @@ const Topbar = () => {
 				)}
 
 				<SignedOut>
-					<SignInOAuthButtons />
+					<div className='flex items-center gap-3'>
+						<Link
+							to='/login'
+							className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-zinc-400 hover:text-white")}
+						>
+							Login
+						</Link>
+						<Link
+							to='/signup'
+							className={cn(buttonVariants({ variant: "default", size: "sm" }), "bg-white text-black hover:bg-white/90")}
+						>
+							Sign up
+						</Link>
+					</div>
 				</SignedOut>
 
 				<UserButton />

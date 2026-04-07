@@ -25,6 +25,8 @@ export const PlaybackControls = () => {
 		playPrevious,
 		isShuffle,
 		toggleShuffle,
+		isRepeat,
+		toggleRepeat,
 		currentPlaybackTime,
 	} = usePlayerStore();
 
@@ -109,7 +111,9 @@ export const PlaybackControls = () => {
 						<Button
 							size='icon'
 							variant='ghost'
-							className={`hidden sm:inline-flex hover:text-white ${isShuffle ? "text-emerald-500" : "text-zinc-400"}`}
+							className={`hidden sm:inline-flex hover:text-white transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 ${
+								isShuffle ? "text-emerald-500" : "text-zinc-400"
+							}`}
 							onClick={toggleShuffle}
 						>
 							<Shuffle className='h-4 w-4' />
@@ -147,7 +151,10 @@ export const PlaybackControls = () => {
 						<Button
 							size='icon'
 							variant='ghost'
-							className='hidden sm:inline-flex hover:text-white text-zinc-400'
+							className={`hidden sm:inline-flex hover:text-white transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 ${
+								isRepeat ? "text-emerald-500" : "text-zinc-400"
+							}`}
+							onClick={toggleRepeat}
 						>
 							<Repeat className='h-4 w-4' />
 						</Button>

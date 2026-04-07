@@ -10,6 +10,7 @@ interface PlayerStore {
 	currentIndex: number;
 	currentPlaybackTime: number;
 	isShuffle: boolean;
+	isRepeat: boolean;
 
 	initializeQueue: (songs: Song[]) => void;
 	playAlbum: (songs: Song[], startIndex?: number) => void;
@@ -22,6 +23,7 @@ interface PlayerStore {
 	loadPlaybackPosition: () => Promise<void>;
 	clearPlaybackPosition: () => Promise<void>;
 	toggleShuffle: () => void;
+	toggleRepeat: () => void;
 }
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -31,6 +33,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	currentIndex: -1,
 	currentPlaybackTime: 0,
 	isShuffle: false,
+	isRepeat: false,
 
 	initializeQueue: (songs: Song[]) => {
 		set({
@@ -100,7 +103,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 	},
 
 	playNext: () => {
-		const { currentIndex, queue, isShuffle } = get();
+		const { currentIndex, queue, isShuffle, isRepeat } = get();
 		if (queue.length === 0) return;
 
 		let nextIndex = currentIndex + 1;
@@ -123,6 +126,15 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 			set({
 				currentSong: nextSong,
 				currentIndex: nextIndex,
+				isPlaying: true,
+				currentPlaybackTime: 0,
+			});
+		} else if (isRepeat) {
+			// loop back to the beginning if repeat is on
+			const nextSong = queue[0];
+			set({
+				currentSong: nextSong,
+				currentIndex: 0,
 				isPlaying: true,
 				currentPlaybackTime: 0,
 			});
@@ -292,5 +304,8 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
 
 	toggleShuffle: () => {
 		set((state) => ({ isShuffle: !state.isShuffle }));
+	},
+	toggleRepeat: () => {
+		set((state) => ({ isRepeat: !state.isRepeat }));
 	},
 }));

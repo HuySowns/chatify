@@ -84,7 +84,8 @@ const AudioPlayer = () => {
 
 		// Snapshot thời gian cần restore (> 1 = đang restore từ server)
 		const savedTime = currentPlaybackTime;
-		const streamUrl = `${backendUrl}/api/songs/stream/${currentSong._id}`;
+		const isLocalPath = currentSong.audioUrl.startsWith("/");
+		const streamUrl = isLocalPath ? currentSong.audioUrl : `${backendUrl}/api/songs/stream/${currentSong._id}`;
 
 		audio.src = streamUrl;
 		audio.load();

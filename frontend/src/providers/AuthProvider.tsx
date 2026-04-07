@@ -2,7 +2,7 @@ import { axiosInstance } from "@/lib/axios";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -19,6 +19,7 @@ const updateApiToken = (token: string | null) => {
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const { getToken, userId } = useAuth();
+	const { user } = useUser();
 	const [loading, setLoading] = useState(true);
 	const { checkAdminStatus } = useAuthStore();
 	const { initSocket, disconnectSocket } = useChatStore();
@@ -31,7 +32,15 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 				const token = await getToken();
 				console.log("Token from Clerk:", token ? "✓ Received" : "✗ No token");
 				updateApiToken(token);
-				if (token) {
+				if (token && user) {
+					// sync user to db
+					await axiosInstance.post("/auth/callback", {
+						id: user.id,
+						firstName: user.firstName,
+						lastName: user.lastName,
+						imageUrl: user.imageUrl,
+					});
+
 					await checkAdminStatus();
 					// Tải vị trí nghe đã lưu khi user login
 					try {
@@ -43,19 +52,23 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 					if (userId) initSocket(userId);
 				}
 			} catch (error: any) {
-				console.error("Error getting token from Clerk:", error);
+				console.error("Error in initAuth:", error);
 				updateApiToken(null);
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		initAuth();
+		if (user) {
+			initAuth();
+		} else if (!userId) {
+			setLoading(false);
+		}
 
 		return () => {
 			disconnectSocket();
 		};
-	}, [getToken, userId, checkAdminStatus, initSocket, disconnectSocket, loadPlaybackPosition]);
+	}, [getToken, userId, user, checkAdminStatus, initSocket, disconnectSocket, loadPlaybackPosition]);
 
 	if (loading)
 		return (
