@@ -9,13 +9,19 @@ export const getFavorites = async (req, res, next) => {
 		const user = await User.findOne({ clerkId });
 		if (!user) return res.status(404).json({ message: "User not found" });
 
-		// Lấy danh sách yêu thích của User hiện tại
-		const favorites = await Favorite.find({ userId: user._id });
+		// Tìm kiếm theo cả ID MongoDB (mới) và ID Clerk (cũ - legacy) để không mất dữ liệu cũ của User
+		const favorites = await Favorite.find({ 
+			$or: [
+				{ userId: user._id },
+				{ userId: clerkId }
+			]
+		});
 		res.json(favorites);
 	} catch (error) {
 		next(error);
 	}
 };
+
 
 export const toggleFavorite = async (req, res, next) => {
 	try {

@@ -3,7 +3,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLibraryStore } from "@/stores/useLibraryStore";
-import { useSocialStore } from "@/stores/useSocialStore";
+import { useFollowStore } from "@/stores/useFollowStore"; // Chuyển từ useSocialStore sang useFollowStore
 import { useExtraStore } from "@/stores/useExtraStore";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Loader } from "lucide-react";
@@ -18,7 +18,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	const { initSocket, disconnectSocket } = useChatStore();
 	const { loadPlaybackPosition } = usePlayerStore();
 	const { fetchPlaylists, fetchFavorites } = useLibraryStore();
-	const { fetchFollows } = useSocialStore();
+	const { fetchFollowStats } = useFollowStore();
 	const { fetchNotifications, fetchGenres } = useExtraStore();
 
 	// 1. Cấu hình Axios Interceptor (Bộ lọc tự động)
@@ -52,7 +52,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 						checkAdminStatus(),
 						fetchPlaylists(),
 						fetchFavorites(),
-						fetchFollows(),
+						fetchFollowStats(),
 						fetchNotifications(),
 						fetchGenres(),
 					]);
@@ -93,7 +93,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		loadPlaybackPosition,
 		fetchPlaylists,
 		fetchFavorites,
-		fetchFollows,
+		fetchFollowStats,
 		fetchNotifications,
 		fetchGenres
 	]);
@@ -108,4 +108,3 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	return <>{children}</>;
 };
 export default AuthProvider;
-
