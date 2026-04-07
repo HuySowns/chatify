@@ -2,31 +2,32 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useExtraStore } from "@/stores/useExtraStore";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "./ui/button";
-import { Bell, LayoutDashboardIcon, Sparkles } from "lucide-react";
+import { LayoutDashboardIcon, Sparkles } from "lucide-react";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import UpgradeDialog from "./UpgradeDialog";
+import NotificationPopover from "./NotificationPopover"; // Bổ sung
 
 const Topbar = () => {
 	const { isAdmin, isPremium } = useAuthStore();
-	const { notifications, isLoading } = useExtraStore();
+	const { isLoading } = useExtraStore();
 	const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
 
 	return (
 		<div
 			className='flex items-center justify-between p-4 sticky top-0 bg-zinc-900/75 
-      backdrop-blur-md z-10
-    '
+      backdrop-blur-md z-20 shadow-md border-b border-zinc-800/50'
 		>
 			<div className='flex gap-2 items-center'>
 				<img src='/spotify.png' className='size-8' alt='Spotify logo' />
-				<span className='font-bold text-white'>Chatify</span>
+				<span className='font-bold text-white tracking-tight'>Chatify</span>
 			</div>
+			
 			<div className='flex items-center gap-4'>
 				{isAdmin && (
-					<Link to={"/admin"} className={cn(buttonVariants({ variant: "outline" }))}>
-						<LayoutDashboardIcon className='size-4  mr-2' />
+					<Link to={"/admin"} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-zinc-300 border-zinc-700 hover:bg-zinc-800 hidden md:flex")}>
+						<LayoutDashboardIcon className='size-4 mr-2' />
 						Admin Dashboard
 					</Link>
 				)}
@@ -47,9 +48,10 @@ const Topbar = () => {
 						</Link>
 					</div>
 				</SignedOut>
+
 				<SignedIn>
 					<div className='flex items-center gap-4'>
-						{/* Nếu chưa là Premium thì hiện nút Nâng cấp, nếu rồi thì hiện Badge VIP */}
+						{/* Nếu chưa là Premium thì hiện nút Nâng cấp */}
 						{!isPremium ? (
 							<button
 								onClick={() => setIsUpgradeOpen(true)}
@@ -63,21 +65,18 @@ const Topbar = () => {
 								Upgrade
 							</button>
 						) : (
-							<div className='flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg'>
+							<div className='flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-black px-3 py-1 rounded-full text-[10px] font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]'>
 								<Sparkles className='size-3' />
 								PREMIUM
 							</div>
 						)}
 
-						<div className='relative'>
-							<Bell className='size-5 text-zinc-400 hover:text-white cursor-pointer' />
-							{notifications.filter((n) => !n.isRead).length > 0 && (
-								<span className='absolute -top-1 -right-1 size-2 bg-emerald-500 rounded-full' />
-							)}
-						</div>
+						{/* MỚI: Bảng điều khiển Thông báo (Thay thế icon chuông tĩnh) */}
+						<NotificationPopover />
 					</div>
 				</SignedIn>
 
+				<div className='border-l border-zinc-800 h-6 mx-1' />
 				<UserButton />
 			</div>
 
