@@ -1,9 +1,9 @@
 import { useExtraStore } from "@/stores/useExtraStore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, LayoutGrid } from "lucide-react";
+import { Trash2, LayoutGrid } from "lucide-react";
 import { useState } from "react";
-// import UpdateGenreDialog from "./UpdateGenreDialog"; // Chúng ta sẽ tạo thêm nếu cần, hoặc dùng chung AddGenreDialog dạng Edit mode
+import UpdateGenreDialog from "./UpdateGenreDialog"; // MỚI
 
 const GenresTable = () => {
 	const { genres, deleteGenre, isLoading } = useExtraStore();
@@ -28,7 +28,7 @@ const GenresTable = () => {
 	return (
 		<Table>
 			<TableHeader>
-				<TableRow className='hover:bg-zinc-800/50'>
+				<TableRow className='hover:bg-zinc-800/50 border-zinc-700'>
 					<TableHead className='w-[80px]'>Image</TableHead>
 					<TableHead>Name</TableHead>
 					<TableHead>Description</TableHead>
@@ -37,27 +37,29 @@ const GenresTable = () => {
 			</TableHeader>
 			<TableBody>
 				{genres.map((genre) => (
-					<TableRow key={genre._id} className='hover:bg-zinc-800/50'>
+					<TableRow key={genre._id} className='hover:bg-zinc-800/50 border-zinc-800/50 group'>
 						<TableCell>
 							{genre.imageUrl ? (
-								<img src={genre.imageUrl} alt={genre.name} className='size-10 rounded object-cover' />
+								<img src={genre.imageUrl} alt={genre.name} className='size-10 rounded object-cover border border-zinc-800 shadow-sm' />
 							) : (
-								<div className='size-10 bg-zinc-800 rounded flex items-center justify-center'>
+								<div className='size-10 bg-zinc-800 rounded flex items-center justify-center border border-zinc-700/50'>
 									<LayoutGrid className='size-5 text-zinc-600' />
 								</div>
 							)}
 						</TableCell>
 						<TableCell className='font-medium text-white'>{genre.name}</TableCell>
 						<TableCell className='text-zinc-400 max-w-xs truncate'>
-							{genre.description || "No description"}
+							{genre.description || <span className='italic opacity-50 font-normal'>No description</span>}
 						</TableCell>
 						<TableCell className='text-right'>
 							<div className='flex justify-end gap-2'>
-								{/* <UpdateGenreDialog genre={genre} />  */}
+								{/* MỚI: Nút chỉnh sửa Thể loại */}
+								<UpdateGenreDialog genre={genre} /> 
+
 								<Button
 									variant='ghost'
 									size='icon'
-									className='text-zinc-400 hover:text-red-500 hover:bg-red-500/10'
+									className='text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors'
 									onClick={() => handleDelete(genre._id)}
 									disabled={isDeleting === genre._id}
 								>
