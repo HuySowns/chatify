@@ -7,7 +7,7 @@ import { useAuthStore } from "./useAuthStore";
 interface ExtraStore {
 	notifications: Notification[];
 	genres: Genre[];
-	genreSongs: Song[]; // MỚI: Danh sách bài hát theo thể loại đang chọn
+	genreSongs: Song[];
 	transactions: Transaction[];
 	isLoading: boolean;
 	error: string | null;
@@ -16,8 +16,12 @@ interface ExtraStore {
 	markNotificationAsRead: (id: string) => Promise<void>;
 	clearNotifications: () => Promise<void>;
 	
+	// THỂ LOẠI (GENRES)
 	fetchGenres: () => Promise<void>;
-	fetchSongsByGenre: (genreId: string) => Promise<void>; // MỚI
+	fetchSongsByGenre: (genreId: string) => Promise<void>;
+	createGenre: (data: Partial<Genre>) => Promise<void>; // MỚI
+	updateGenre: (id: string, data: Partial<Genre>) => Promise<void>; // MỚI
+	deleteGenre: (id: string) => Promise<void>; // MỚI
 	
 	fetchTransactions: () => Promise<void>;
 	fetchAllTransactions: () => Promise<void>;
@@ -25,7 +29,7 @@ interface ExtraStore {
 	deleteTransaction: (id: string) => Promise<void>;
 }
 
-export const useExtraStore = create<ExtraStore>((set) => ({
+export const useExtraStore = create<ExtraStore>((set, get) => ({
 	notifications: [],
 	genres: [],
 	genreSongs: [],
@@ -75,7 +79,6 @@ export const useExtraStore = create<ExtraStore>((set) => ({
 		}
 	},
 
-	// MỚI: Tải bài hát thuộc một thể loại cụ thể
 	fetchSongsByGenre: async (genreId: string) => {
 		set({ isLoading: true, genreSongs: [] });
 		try {
@@ -83,6 +86,54 @@ export const useExtraStore = create<ExtraStore>((set) => ({
 			set({ genreSongs: response.data });
 		} catch (error: any) {
 			toast.error("Failed to fetch songs for this genre");
+		} finally {
+			set({ isLoading: false });
+		}
+	},
+
+	// MỚI: Quản lý Thể loại (Create)
+	createGenre: async (data) => {
+		set({ isLoading: true });
+		try {
+			const response = await axiosInstance.post("/genres", data);
+			set((state) => ({
+				genres: [...state.genres, response.data],
+			}));
+			toast.success("Genre created successfully");
+		} catch (error: any) {
+			toast.error("Failed to create genre: " + error.message);
+		} finally {
+			set({ isLoading: false });
+		}
+	},
+
+	// MỚI: Quản lý Thể loại (Update)
+	updateGenre: async (id, data) => {
+		set({ isLoading: true });
+		try {
+			const response = await axiosInstance.put(`/genres/${id}`, data);
+			set((state) => ({
+				genres: state.genres.map((g) => (g._id === id ? response.data : g)),
+			}));
+			toast.success("Genre updated successfully");
+		} catch (error: any) {
+			toast.error("Failed to update genre: " + error.message);
+		} finally {
+			set({ isLoading: false });
+		}
+	},
+
+	// MỚI: Quản lý Thể loại (Delete)
+	deleteGenre: async (id) => {
+		set({ isLoading: true });
+		try {
+			await axiosInstance.delete(`/genres/${id}`);
+			set((state) => ({
+				genres: state.genres.filter((g) => g._id !== id),
+			}));
+			toast.success("Genre deleted successfully");
+		} catch (error: any) {
+			toast.error("Failed to delete genre: " + error.message);
 		} finally {
 			set({ isLoading: false });
 		}
@@ -117,10 +168,7 @@ export const useExtraStore = create<ExtraStore>((set) => ({
 				description: "Premium Subscription Upgrade",
 			});
 			set((state) => ({ transactions: [...state.transactions, response.data] }));
-			
-			// Cập nhật trạng thái Premium ngay lập tức ở AuthStore
 			useAuthStore.getState().setIsPremium(true);
-			
 			toast.success("Successfully upgraded to Premium!");
 		} catch (error: any) {
 			toast.error("Upgrade failed. Please try again.");

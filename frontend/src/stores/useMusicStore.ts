@@ -21,7 +21,10 @@ interface MusicStore {
 	fetchTrendingSongs: () => Promise<void>;
 	fetchStats: () => Promise<void>;
 	fetchSongs: () => Promise<void>;
+	
+	// QUẢN TRỊ VIÊN
 	deleteSong: (id: string) => Promise<void>;
+	updateSong: (id: string, data: FormData) => Promise<void>; // MỚI
 	deleteAlbum: (id: string) => Promise<void>;
 	updateAlbum: (id: string, data: any) => Promise<void>;
 }
@@ -46,7 +49,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
 		set({ isLoading: true, error: null });
 		try {
 			await axiosInstance.delete(`/admin/songs/${id}`);
-
 			set((state) => ({
 				songs: state.songs.filter((song) => song._id !== id),
 			}));
@@ -54,6 +56,26 @@ export const useMusicStore = create<MusicStore>((set) => ({
 		} catch (error: any) {
 			console.log("Error in deleteSong", error);
 			toast.error("Error deleting song");
+		} finally {
+			set({ isLoading: false });
+		}
+	},
+
+	// MỚI: Chỉnh sửa bài hát hiện có
+	updateSong: async (id, data) => {
+		set({ isLoading: true, error: null });
+		try {
+			const response = await axiosInstance.put(`/admin/songs/${id}`, data, {
+				headers: {
+					"Content-Type": "multipart/form-data",
+				},
+			});
+			set((state) => ({
+				songs: state.songs.map((song) => (song._id === id ? response.data : song)),
+			}));
+			toast.success("Song updated successfully");
+		} catch (error: any) {
+			toast.error("Failed to update song: " + error.message);
 		} finally {
 			set({ isLoading: false });
 		}
@@ -120,7 +142,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
 
 	fetchAlbums: async () => {
 		set({ isLoading: true, error: null });
-
 		try {
 			const response = await axiosInstance.get("/albums");
 			set({ albums: response.data });
